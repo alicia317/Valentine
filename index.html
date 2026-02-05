@@ -17,29 +17,29 @@
             position: relative;
         }
 
-        /* Schwebende Herzen im Hintergrund */
-        .heart-bg {
-            position: absolute;
-            font-size: 1.5em;
-            opacity: 0.6;
-            animation: floatUp 8s infinite ease-in;
+        /* Herzen im Hintergrund - symmetrisch aufgereiht */
+        #hearts-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        @keyframes floatUp {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.6;
-            }
-            90% {
-                opacity: 0.6;
-            }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
-            }
+        .heart-static {
+            font-size: 1.5em;
+            color: #ff6b9d;
+            opacity: 0.4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .card-container {
@@ -122,45 +122,118 @@
 
         .btns {
             margin-top: 30px;
-            position: relative;
-            width: 100%;
-            height: 80px;
             display: flex;
             justify-content: center;
             align-items: center;
+            gap: 15px;
+            width: 100%;
         }
 
         .btn {
             border: none;
             border-radius: 8px;
-            margin: 5px;
             cursor: pointer;
             transition: 0.3s;
             font-weight: bold;
-            background: #e0e0e0;
-            color: #333;
         }
 
         .btn.yes {
             padding: 15px 35px;
             font-size: 1.3em;
+            background: #ff69b4;
+            color: #fff;
         }
 
         .btn.no {
-            padding: 8px 15px;
-            font-size: 0.9em;
-            position: absolute;
-        }
-
-        .btn:hover {
-            filter: brightness(0.9);
+            padding: 15px 25px;
+            font-size: 1.1em;
+            background: #e0e0e0;
+            color: #333;
+            position: relative;
         }
 
         .btn.yes:hover {
             transform: scale(1.1);
+            background: #ff1493;
         }
 
-        /* Feuerwerk Effekt */
+        /* Canvas für Feuerwerk */
+        #fireworkCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9998;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Konfetti */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: red;
+            animation: confettiFall 3s linear forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* CSS Herzen */
+        .css-heart {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            animation: heartFloat 3s ease-out forwards;
+        }
+
+        .css-heart::before,
+        .css-heart::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 30px;
+            background: #ff1493;
+            border-radius: 50px 50px 0 0;
+        }
+
+        .css-heart::before {
+            left: 10px;
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+        }
+
+        .css-heart::after {
+            left: 0;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+        }
+
+        @keyframes heartFloat {
+            0% {
+                transform: translate(0, 0) scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(1) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Celebration Container */
         .celebration {
             position: fixed;
             top: 0;
@@ -169,26 +242,7 @@
             height: 100%;
             pointer-events: none;
             z-index: 9999;
-        }
-
-        .heart {
-            position: absolute;
-            font-size: 2em;
-            animation: explode 2s forwards;
-        }
-
-        @keyframes explode {
-            0% {
-                opacity: 1;
-                transform: translate(0, 0) scale(0);
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: translate(var(--tx), var(--ty)) scale(1);
-            }
+            background: #ffccd5;
         }
 
         .title-overlay {
@@ -220,11 +274,21 @@
                 transform: translate(-50%, -50%) scale(1);
             }
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <!-- Schwebende Herzen im Hintergrund -->
-    <div id="hearts-container"></div>
+    <!-- Audio -->
+    <audio id="screamSound" src="scream.mp4" preload="auto"></audio>
+
+    <!-- Canvas für Feuerwerk -->
+    <canvas id="fireworkCanvas"></canvas>
+
+    <!-- Symmetrisch aufgereihte Herzen im Hintergrund -->
+    <div id="hearts-background"></div>
 
     <div class="card-container">
         <div class="card" id="valentine-card">
@@ -243,29 +307,16 @@
     </div>
 
     <script>
-        // Herzen im Hintergrund erstellen
-        const heartsContainer = document.getElementById('hearts-container');
-        const heartSymbols = ['💕', '💖', '💗', '💓', '❤️'];
+        // Symmetrisch aufgereihte Herzen im Hintergrund erstellen
+        const heartsBackground = document.getElementById('hearts-background');
+        const heartSymbol = '❤️';
         
-        function createBackgroundHeart() {
+        // Grid: 10 Spalten x 8 Reihen = 80 Herzen
+        for (let i = 0; i < 80; i++) {
             const heart = document.createElement('div');
-            heart.className = 'heart-bg';
-            heart.textContent = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
-            heart.style.left = Math.random() * 100 + '%';
-            heart.style.animationDuration = (5 + Math.random() * 5) + 's';
-            heart.style.animationDelay = Math.random() * 5 + 's';
-            heartsContainer.appendChild(heart);
-            
-            // Herz nach Animation entfernen
-            setTimeout(() => heart.remove(), 10000);
-        }
-        
-        // Regelmäßig neue Herzen erstellen
-        setInterval(createBackgroundHeart, 800);
-        
-        // Initiale Herzen
-        for (let i = 0; i < 10; i++) {
-            createBackgroundHeart();
+            heart.className = 'heart-static';
+            heart.textContent = heartSymbol;
+            heartsBackground.appendChild(heart);
         }
 
         const card = document.getElementById('valentine-card');
@@ -280,40 +331,151 @@
         });
 
         function yesResponse() {
-            createFireworks();
+            // Sound abspielen
+            const sound = document.getElementById('screamSound');
+            sound.play().catch(e => console.log('Audio play failed:', e));
+            
+            // Hintergrund-Herzen ausblenden
+            heartsBackground.classList.add('hidden');
+            
+            createCelebration();
+            startFireworks();
             showTitle();
         }
 
-        function createFireworks() {
+        function createCelebration() {
             const celebration = document.createElement('div');
             celebration.className = 'celebration';
             document.body.appendChild(celebration);
 
-            // 50 Herzen erstellen
-            for (let i = 0; i < 50; i++) {
+            // 200 Konfetti erstellen
+            const confettiColors = ['#ff1493', '#ff69b4', '#ffd700', '#00bfff', '#7fff00', '#ff6347', '#9370db'];
+            for (let i = 0; i < 200; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-10px';
+                    confetti.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                    confetti.style.width = (5 + Math.random() * 10) + 'px';
+                    confetti.style.height = (5 + Math.random() * 10) + 'px';
+                    confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    confetti.style.animationDelay = Math.random() + 's';
+                    celebration.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 20);
+            }
+
+            // 150 CSS-Herzen erstellen
+            for (let i = 0; i < 150; i++) {
                 setTimeout(() => {
                     const heart = document.createElement('div');
-                    heart.className = 'heart';
-                    heart.textContent = ['💕', '💖', '💗', '💓', '❤️'][Math.floor(Math.random() * 5)];
-                    
-                    // Zufällige Startposition (Zentrum)
+                    heart.className = 'css-heart';
                     heart.style.left = '50%';
                     heart.style.top = '50%';
                     
-                    // Zufällige Endposition
                     const angle = Math.random() * Math.PI * 2;
-                    const distance = 200 + Math.random() * 300;
+                    const distance = 150 + Math.random() * 400;
                     const tx = Math.cos(angle) * distance + 'px';
                     const ty = Math.sin(angle) * distance + 'px';
                     
                     heart.style.setProperty('--tx', tx);
                     heart.style.setProperty('--ty', ty);
                     
+                    // Zufällige Farben für Herzen
+                    const heartColors = ['#ff1493', '#ff69b4', '#ff6b9d', '#ff0066'];
+                    const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+                    heart.style.filter = `hue-rotate(${Math.random() * 60}deg)`;
+                    
                     celebration.appendChild(heart);
                     
-                    setTimeout(() => heart.remove(), 2000);
-                }, i * 50);
+                    setTimeout(() => heart.remove(), 3000);
+                }, i * 25);
             }
+        }
+
+        function startFireworks() {
+            const canvas = document.getElementById('fireworkCanvas');
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+
+            class Particle {
+                constructor(x, y, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.color = color;
+                    this.velocity = {
+                        x: (Math.random() - 0.5) * 8,
+                        y: (Math.random() - 0.5) * 8
+                    };
+                    this.alpha = 1;
+                    this.decay = 0.015;
+                    this.radius = Math.random() * 3 + 2;
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.alpha;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                update() {
+                    this.velocity.y += 0.1; // Gravity
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    this.alpha -= this.decay;
+                }
+            }
+
+            function createFirework() {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height * 0.6;
+                const colors = ['#ff1493', '#ff69b4', '#ffd700', '#00bfff', '#7fff00', '#ff6347'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                for (let i = 0; i < 50; i++) {
+                    particles.push(new Particle(x, y, color));
+                }
+            }
+
+            function animate() {
+                ctx.fillStyle = 'rgba(255, 204, 213, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach((particle, index) => {
+                    if (particle.alpha <= 0) {
+                        particles.splice(index, 1);
+                    } else {
+                        particle.update();
+                        particle.draw();
+                    }
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            // Feuerwerk alle 300ms für 5 Sekunden
+            let count = 0;
+            const interval = setInterval(() => {
+                createFirework();
+                count++;
+                if (count > 20) {
+                    clearInterval(interval);
+                }
+            }, 300);
+
+            animate();
         }
 
         function showTitle() {
@@ -323,7 +485,7 @@
             document.body.appendChild(title);
         }
 
-        // "Nein" Button bewegt sich weg
+        // "Nein" Button bewegt sich weg beim Hover
         noBtn.addEventListener('mouseover', moveButton);
         noBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -331,16 +493,15 @@
         });
 
         function moveButton() {
-            const container = document.querySelector('.btns');
             const cardBack = document.querySelector('.card-back');
             
-            // Größerer Bewegungsbereich (gesamte Kartenrückseite)
-            const maxX = cardBack.offsetWidth - noBtn.offsetWidth - 40;
-            const maxY = cardBack.offsetHeight - noBtn.offsetHeight - 40;
+            const maxX = cardBack.offsetWidth - noBtn.offsetWidth - 60;
+            const maxY = cardBack.offsetHeight - noBtn.offsetHeight - 60;
             
-            const randomX = Math.floor(Math.random() * maxX);
-            const randomY = Math.floor(Math.random() * maxY);
+            const randomX = 30 + Math.floor(Math.random() * maxX);
+            const randomY = 30 + Math.floor(Math.random() * maxY);
             
+            noBtn.style.position = 'absolute';
             noBtn.style.left = randomX + 'px';
             noBtn.style.top = randomY + 'px';
         }
