@@ -18,8 +18,8 @@
 
         .card-container {
             position: relative;
-            width: 300px;
-            height: 200px;
+            width: 350px;
+            height: 500px;
             perspective: 1000px;
             cursor: pointer;
         }
@@ -28,11 +28,12 @@
             width: 100%;
             height: 100%;
             background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             transform-style: preserve-3d;
             transform: rotateY(0deg);
             transition: transform 0.8s ease-in-out;
+            border: 3px solid #ff6b9d;
         }
 
         .card.open {
@@ -45,16 +46,17 @@
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
-            border-radius: 10px;
+            border-radius: 15px;
         }
 
         .card-front {
-            background: #ef476f;
+            background: linear-gradient(135deg, #ef476f, #ff6b9d);
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5em;
+            font-size: 1.8em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .card-back {
@@ -62,41 +64,75 @@
             color: #333;
             transform: rotateY(180deg);
             text-align: center;
-            padding: 20px;
+            padding: 30px;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .card-back h2 {
-            margin-top: 20px;
+            margin-top: 10px;
+            margin-bottom: 20px;
             color: #d0006f;
+            font-size: 1.5em;
+        }
+
+        .teddy {
+            font-size: 4em;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         .btns {
-            margin-top: 20px;
+            margin-top: 30px;
+            position: relative;
+            width: 100%;
+            height: 60px;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 25px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             margin: 5px;
             cursor: pointer;
-            font-size: 1em;
+            font-size: 1.1em;
             transition: 0.3s;
+            font-weight: bold;
         }
 
         .btn.yes {
             background: #38b000;
             color: #fff;
+            padding: 15px 35px;
+            font-size: 1.3em;
         }
 
         .btn.no {
             background: #d90429;
             color: #fff;
+            padding: 8px 15px;
+            font-size: 0.9em;
+            position: absolute;
+            transition: all 0.3s ease;
         }
 
         .btn:hover {
             filter: brightness(1.2);
+        }
+
+        .btn.yes:hover {
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -107,10 +143,11 @@
                 <span>Click to open ❤️</span>
             </div>
             <div class="card-back">
+                <div class="teddy">🧸</div>
                 <h2>Will you be my Valentine?</h2>
                 <div class="btns">
                     <button class="btn yes" onclick="yesResponse()">Ja</button>
-                    <button class="btn no" onclick="noResponse()">Nein</button>
+                    <button class="btn no" id="noBtn" onmouseover="moveButton()" onclick="noResponse()">Nein</button>
                 </div>
             </div>
         </div>
@@ -118,9 +155,13 @@
 
     <script>
         const card = document.getElementById('valentine-card');
+        let cardOpened = false;
 
         card.addEventListener('click', () => {
-            card.classList.toggle('open');
+            if (!cardOpened) {
+                card.classList.add('open');
+                cardOpened = true;
+            }
         });
 
         function yesResponse() {
@@ -128,7 +169,22 @@
         }
 
         function noResponse() {
-            alert("Oh nein! 💔 Vielleicht nächstes Mal...");
+            alert("Oh nein! 💔 Aber du konntest mich nicht fangen!");
+        }
+
+        function moveButton() {
+            const noBtn = document.getElementById('noBtn');
+            const container = document.querySelector('.btns');
+            
+            // Zufällige Position innerhalb des Containers
+            const maxX = container.offsetWidth - noBtn.offsetWidth - 10;
+            const maxY = container.offsetHeight - noBtn.offsetHeight - 10;
+            
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+            
+            noBtn.style.left = randomX + 'px';
+            noBtn.style.top = randomY + 'px';
         }
     </script>
 </body>
